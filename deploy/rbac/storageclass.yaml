@@ -1,0 +1,12 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ceph-storageclass
+  namespace: cephfs
+provisioner: ceph.com/cephfs
+parameters:
+  monitors: _REPLACEME_WITH_MONITOR_IP_:6789
+  adminId: admin
+  adminSecretName: storage-ceph-secret
+  adminSecretNamespace: cephfs
+  claimRoot: /pvc-volumes

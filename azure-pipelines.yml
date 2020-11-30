@@ -1,0 +1,39 @@
+pool:
+  vmImage: 'Ubuntu-20.04'
+
+trigger:
+  branches:
+    include:
+      - master
+
+variables:
+  imageName: 'cephfs-provisioner'
+
+steps:
+  - task: GoTool@0
+    inputs:
+      version: '1.15'
+    displayName: 'Use Go 1.15'
+
+  - script: |
+      /opt/hostedtoolcache/go/1.15.0/x64/bin/go build -a -ldflags '-extldflags "-static"' -o cephfs-provisioner cephfs-provisioner.go
+    displayName: 'build'
+
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'REPLACEME'
+      repository: '$(imageName)'
+      command: 'build'
+      Dockerfile: '**/Dockerfile'
+      tags: |
+        $(Build.BuildNumber)
+        latest
+
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'REPLACEME'
+      repository: '$(imageName)'
+      command: 'push'
+      tags: |
+        $(Build.BuildNumber)
+        latest
