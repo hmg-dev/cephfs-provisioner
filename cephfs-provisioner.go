@@ -45,6 +45,7 @@ const (
 	provisionCmd       = "/usr/local/bin/cephfs_provisioner"
 	provisionerIDAnn   = "cephFSProvisionerIdentity"
 	cephShareAnn       = "cephShare"
+	volumeGroupAnn     = "cephVolumeGroup"
 	provisionerNameKey = "PROVISIONER_NAME"
 	secretNamespaceKey = "PROVISIONER_SECRET_NAMESPACE"
 )
@@ -197,6 +198,7 @@ func (p *cephFSProvisioner) Provision(options controller.VolumeOptions) (*v1.Per
 			Annotations: map[string]string{
 				provisionerIDAnn: p.identity,
 				cephShareAnn:     share,
+				volumeGroupAnn:   options.PVC.Namespace,
 			},
 		},
 		Spec: v1.PersistentVolumeSpec{
@@ -243,14 +245,15 @@ func (p *cephFSProvisioner) Delete(volume *v1.PersistentVolume) error {
 		return errors.New("ceph share annotation not found on PV")
 	}
 	// delete CephFS
-	// TODO when beta is removed, have to check kube version and pick v1/beta
-	// accordingly: maybe the controller lib should offer a function for that
-	class, err := p.client.StorageV1beta1().StorageClasses().Get(util.GetPersistentVolumeClass(volume), metav1.GetOptions{})
+	klog.Infof("determine PV-storageclass for volume %v", volume.Name)
+	class, err := p.client.StorageV1().StorageClasses().Get(util.GetPersistentVolumeClass(volume), metav1.GetOptions{})
 	if err != nil {
+		klog.Errorf("Failed to determine PV-storageclass: %v", err)
 		return err
 	}
-	cluster, adminID, adminSecret, pvcRoot, mon, _, err := p.parseParameters(class.Parameters)
+	cluster, adminID, adminSecret, pvcRoot, mon, deterministicNames, err := p.parseParameters(class.Parameters)
 	if err != nil {
+		klog.Errorf("Failed to parse storageclass-parameters: %v", err)
 		return err
 	}
 	user := volume.Spec.PersistentVolumeSource.CephFS.User
@@ -263,6 +266,9 @@ func (p *cephFSProvisioner) Delete(volume *v1.PersistentVolume) error {
 		"CEPH_AUTH_ID=" + adminID,
 		"CEPH_AUTH_KEY=" + adminSecret,
 		"CEPH_VOLUME_ROOT=" + pvcRoot}
+	if deterministicNames {
+		cmd.Env = append(cmd.Env, "CEPH_VOLUME_GROUP="+volume.Annotations[volumeGroupAnn])
+	}
 	if *disableCephNamespaceIsolation {
 		cmd.Env = append(cmd.Env, "CEPH_NAMESPACE_ISOLATION_DISABLED=true")
 	}

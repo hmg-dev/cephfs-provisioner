@@ -168,7 +168,7 @@ class CephFSNativeDriver(object):
 
             # Construct auth caps that if present might conflict with the desired
             # auth caps.
-            unwanted_access_level = 'r' if want_access_level is 'rw' else 'rw'
+            unwanted_access_level = 'r' if want_access_level == 'rw' else 'rw'
             unwanted_mds_cap = 'allow {0} path={1}'.format(unwanted_access_level, path)
             if namespace:
                 unwanted_osd_cap = 'allow {0} pool={1} namespace={2}'.format(

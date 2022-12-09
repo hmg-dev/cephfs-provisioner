@@ -1,6 +1,6 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
-ENV CEPH_VERSION "octopus"
+ENV CEPH_VERSION "pacific"
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && \

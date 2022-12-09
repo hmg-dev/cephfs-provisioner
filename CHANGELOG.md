@@ -1,3 +1,7 @@
+# HMG changes (12/2022):
+- bugfix: deleting share should work now/again (also when using deterministicNames feature)
+- update Dockerimage and Ceph-Release
+
 # HMG changes (11/2020):
 - added go-dependencies via go-modules
 - added build-pipeline-definition for azure-devops
